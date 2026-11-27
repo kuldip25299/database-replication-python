@@ -1,83 +1,50 @@
-# Database Replication using Python
+# Database Replication Using Python
 
-Understand how database replication works through simple, runnable Python implementations. This repository covers primary-replica architecture, synchronous and asynchronous replication, replication lag, read/write splitting, failover, and consistency trade-offs.
+A practical, code-first guide to understanding database replication, primary-replica architecture, synchronous and asynchronous replication, replication lag, read/write splitting, and failover using Python.
 
----
+The goal of this repository is to explain how database replication works internally through small, runnable examples rather than introducing a full database infrastructure.
 
-## 1. Why This Repository?
+## Why Database Replication Matters
 
-As an application grows, a single database server can become a bottleneck.
+As an application grows, a single database can become a bottleneck.
 
-Increasing application servers does not automatically solve database limitations. The database itself may struggle with increasing read traffic, availability requirements, and the risk of a single point of failure.
+Consider an e-commerce application:
 
-Database replication is one approach to address these problems.
+- Thousands of users browse products simultaneously.
+- Customers place orders and update account information.
+- Product searches and dashboard requests generate continuous read traffic.
+- The database handles both read and write operations.
 
-Instead of keeping data on only one database server, we maintain copies of that data across multiple database nodes.
+Eventually, the primary database may struggle to handle all this traffic.
 
-For example:
+Adding more application servers does not necessarily solve the problem because every server may still depend on the same database.
 
-- A primary database handles write operations.
-- Replica databases maintain copies of the primary's data.
-- Read requests can be distributed across replicas.
-- If the primary becomes unavailable, a replica may be promoted to become the new primary.
+Database replication helps by maintaining copies of data across multiple database nodes.
 
-However, replication introduces its own challenges.
+A common architecture uses:
 
-A replica may not have received the latest update. A primary can fail before its changes reach replicas. Promoting a replica can also result in data loss if replication was incomplete.
+- **Primary database:** Handles write operations.
+- **Replica databases:** Maintain copies of primary data and serve read requests.
+- **Replication mechanism:** Transfers changes from the primary to replicas.
 
-This repository explores these problems through practical Python examples.
+This can improve read scalability and availability, but it also introduces consistency, replication lag, and failover challenges.
 
-## 2. What You Will Learn
+## What You Will Learn
 
-The repository moves from basic concepts to practical implementations.
+This repository covers:
 
-### Database Replication Fundamentals
+1. Why database replication is needed.
+2. Database replication fundamentals.
+3. Primary-replica architecture.
+4. Synchronous replication.
+5. Asynchronous replication.
+6. Replication lag and stale reads.
+7. Read/write splitting.
+8. Primary failure and replica promotion.
+9. Replication consistency.
+10. Production trade-offs and failure scenarios.
 
-- What database replication is
-- Why replication is needed
-- Primary-replica architecture
-- How changes move from primary to replicas
-- Replication versus database sharding
-
-### Replication Strategies
-
-- Synchronous replication
-- Asynchronous replication
-- Advantages and limitations of each strategy
-- How replication acknowledgment works
-- Latency and availability trade-offs
-
-### Replication Lag
-
-- What replication lag means
-- Why replicas can return stale data
-- How delayed updates affect application behavior
-- Read-after-write consistency problems
-
-### Read/Write Splitting
-
-- Sending writes to the primary
-- Distributing reads across replicas
-- Routing reads to the primary when fresh data is required
-- Handling replica availability
-
-### Failover and Recovery
-
-- What happens when the primary database fails
-- Promoting a replica
-- Selecting a suitable replica
-- Handling incomplete replication
-- Understanding split-brain scenarios
-
-### Consistency and Production Trade-offs
-
-- Strong consistency versus eventual consistency
-- Replication durability
-- Replica synchronization
-- Failover risks
-- Operational complexity
-
-## 3. Repository Structure
+## Repository Structure
 
 ```text
 database-replication-python/
@@ -108,77 +75,50 @@ database-replication-python/
     └── test_replication.py
 ```
 
-## 4. Implementation Approach
+## Documentation
 
-The examples use simple Python classes and in-memory dictionaries to simulate database nodes.
+Follow the documentation in order. Each document introduces a concept and explains the engineering decisions behind it.
 
-There is no requirement to install or configure PostgreSQL, MySQL, Redis, or any other database server.
+| No. | Topic | What it covers |
+|---|---|---|
+| 01 | [Business Problem](docs/01_business_problem.md) | Why a single database becomes a bottleneck |
+| 02 | [Replication Fundamentals](docs/02_replication_fundamentals.md) | How database replication works |
+| 03 | [Primary-Replica Architecture](docs/03_primary_replica_architecture.md) | Primary and replica responsibilities |
+| 04 | [Synchronous Replication](docs/04_synchronous_replication.md) | Waiting for replica acknowledgments |
+| 05 | [Asynchronous Replication](docs/05_asynchronous_replication.md) | Replicating changes after primary acknowledgment |
+| 06 | [Replication Lag](docs/06_replication_lag.md) | Why replicas can return stale data |
+| 07 | [Read/Write Splitting](docs/07_read_write_splitting.md) | Routing reads and writes to different nodes |
+| 08 | [Failover and Recovery](docs/08_failover_and_recovery.md) | Handling primary database failure |
+| 09 | [Replication Consistency](docs/09_replication_consistency.md) | Understanding consistency guarantees |
+| 10 | [Production Trade-offs](docs/10_production_tradeoffs.md) | Practical limitations and design decisions |
 
-The goal is to understand the underlying replication behavior before introducing database-specific implementation details.
+## Python Examples
 
-### Example: Primary-Replica Architecture
+All examples are self-contained educational simulations using in-memory Python objects.
 
-Consider an application with one primary and two replicas.
-
-```text
-                 Application
-                      |
-                      |
-                Primary Database
-                      |
-               Replication Changes
-                 /         \
-                /           \
-               v             v
-        Replica 1         Replica 2
-```
-
-When the application writes a new user:
-
-1. The write request reaches the primary.
-2. The primary stores the new record.
-3. The change is propagated to replicas.
-4. Replicas update their local copies.
-5. Read requests can be served by replicas, depending on the consistency requirements.
-
-This sounds straightforward, but the timing of replication makes a significant difference.
-
-For example, in asynchronous replication, the primary may acknowledge a write before replicas receive it.
-
-If the application immediately reads that record from a replica, it may not find the latest data.
-
-The repository will implement this behavior so that the problem is visible in code.
-
-## 5. Learning Path
-
-The examples are organized in the following order.
-
-| Example | What it demonstrates |
+| File | What it demonstrates |
 |---|---|
-| `01_single_database.py` | Starting point with a single database |
-| `02_primary_replica.py` | Basic primary-replica architecture |
-| `03_synchronous_replication.py` | Waiting for replica acknowledgment |
-| `04_asynchronous_replication.py` | Propagating changes without waiting |
-| `05_replication_lag.py` | Understanding stale reads |
-| `06_read_write_router.py` | Routing reads and writes to different nodes |
+| `01_single_database.py` | Basic database operations and a single database failure |
+| `02_primary_replica.py` | Primary-replica architecture |
+| `03_synchronous_replication.py` | Replica acknowledgments before write confirmation |
+| `04_asynchronous_replication.py` | Queued replication and delayed replica updates |
+| `05_replication_lag.py` | Measuring lag and detecting stale reads |
+| `06_read_write_router.py` | Routing reads to replicas and writes to the primary |
 | `07_primary_failover.py` | Promoting a replica after primary failure |
 
-Each example builds on the concepts introduced in the documentation.
+## Requirements
 
-## 6. Requirements
+- Python 3.10 or later
+- No external Python packages required
 
-- Python 3.11+
-- pip
-- Basic Python knowledge
+The implementation uses Python standard library modules.
 
-No external database or infrastructure is required.
-
-## 7. Installation
+## Getting Started
 
 Clone the repository:
 
 ```bash
-git clone https://github.com/<your-github-username>/database-replication-python.git
+git clone https://github.com/kuldip25299/database-replication-python.git
 ```
 
 Navigate into the project:
@@ -187,43 +127,15 @@ Navigate into the project:
 cd database-replication-python
 ```
 
-Create a virtual environment:
+No dependency installation is necessary.
 
-```bash
-python -m venv venv
-```
-
-Activate it.
-
-**macOS / Linux**
-
-```bash
-source venv/bin/activate
-```
-
-**Windows**
-
-```bash
-venv\Scripts\activate
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-## 8. Running Examples
-
-Run any example directly using Python.
-
-For example:
+Run an example:
 
 ```bash
 python examples/01_single_database.py
 ```
 
-Run the primary-replica example:
+Explore primary-replica replication:
 
 ```bash
 python examples/02_primary_replica.py
@@ -241,120 +153,148 @@ Run the asynchronous replication example:
 python examples/04_asynchronous_replication.py
 ```
 
-Run the replication lag example:
+Explore replication lag:
 
 ```bash
 python examples/05_replication_lag.py
 ```
 
-Run the read/write routing example:
+Run the read/write router:
 
 ```bash
 python examples/06_read_write_router.py
 ```
 
-Run the failover example:
+Explore primary failover:
 
 ```bash
 python examples/07_primary_failover.py
 ```
 
-## 9. Running Tests
+## Running Tests
 
-The repository includes tests for the Python implementations.
+The repository includes tests using Python's built-in `unittest` framework.
 
 Run the complete test suite from the repository root:
 
 ```bash
-pytest -q
+python -m unittest discover -s examples -p "test_replication.py" -v
 ```
 
-## 10. Synchronous vs. Asynchronous Replication
+Alternatively:
 
-One of the most important decisions in database replication is whether the primary should wait for replicas before acknowledging a write.
+```bash
+python examples/test_replication.py
+```
 
-| Aspect | Synchronous | Asynchronous |
+## Important Engineering Concepts
+
+### 1. Synchronous vs Asynchronous Replication
+
+| Consideration | Synchronous | Asynchronous |
 |---|---|---|
-| Write acknowledgment | Waits for configured replica acknowledgment | Does not wait for replica acknowledgment |
+| Write acknowledgment | Waits for configured replica acknowledgments | Does not wait for replica updates |
 | Write latency | Generally higher | Generally lower |
-| Replica freshness | Stronger guarantees, depending on configuration | Replicas may lag |
-| Availability | Can be affected by unavailable required replicas | Primary can often continue writing |
-| Data loss risk | Lower under the configured acknowledgment and durability guarantees | Recent acknowledged writes may be lost during certain failures |
+| Replica freshness | Depends on acknowledgment policy | Replicas can lag behind |
+| Potential data loss | Reduced under appropriate durability guarantees | Acknowledged writes may be missing from replicas |
+| Availability trade-off | Writes may be blocked when required acknowledgments are unavailable | Primary can continue accepting writes while replicas are behind |
 
-Neither strategy is universally better.
+The exact guarantees depend on the database engine and replication configuration.
 
-The right choice depends on the application's consistency requirements, latency tolerance, and failure-handling strategy.
+### 2. Replication Lag
 
-Also, synchronous replication does not automatically mean every replica has acknowledged every write. Real databases have different acknowledgment and durability configurations.
+Replication lag occurs when a replica has not yet applied all changes from the primary.
 
-## 11. Important Concepts and Limitations
+This can cause:
 
-This repository is an educational simulation, not a production database replication engine.
+- Stale reads.
+- Inconsistent user experiences.
+- Incorrect decisions based on outdated information.
+- Problems with read-after-write behavior.
 
-The Python examples demonstrate the concepts, but they do not implement the full behavior of systems such as PostgreSQL streaming replication or MySQL replication.
+### 3. Read/Write Splitting
 
-Some important production concerns include:
+A common application architecture routes:
 
-- Network failures between database nodes
-- Replication acknowledgment and durability
-- Replica lag under heavy write traffic
-- Concurrent writes and transaction ordering
-- Primary election and split-brain prevention
-- Failover coordination
-- Replication recovery and resynchronization
-- Monitoring replication health
+- Writes to the primary.
+- Read-heavy operations to replicas.
+- Consistency-sensitive reads to the primary when necessary.
 
-The examples intentionally avoid infrastructure complexity so that the core behavior remains easy to understand.
+This reduces pressure on the primary, but replica selection must account for availability and lag.
 
-## 12. Database Replication vs. Database Sharding
+### 4. Failover
 
-Replication and sharding are often used together, but they solve different problems.
+When the primary fails, an eligible replica may be promoted.
 
-| Database Replication | Database Sharding |
-|---|---|
-| Maintains copies of data across nodes | Splits data across multiple nodes |
-| Improves read capacity and availability | Distributes data and workload |
-| Multiple nodes can hold the same records | Different nodes hold different data partitions |
-| Requires synchronization between copies | Requires routing requests to the correct shard |
+However, failover requires careful handling of:
 
-For example, an application might use sharding to distribute users across multiple database groups and replication within each group to maintain additional copies.
+- Replication positions.
+- Potentially missing acknowledged writes.
+- Old-primary fencing.
+- Leader election.
+- Split-brain prevention.
 
-Understanding both concepts is important when designing systems that need to scale beyond a single database server.
+Promoting a replica is not sufficient by itself to guarantee safe recovery.
 
-## 13. Who Is This Repository For?
+## Production Considerations
 
-- Backend developers learning distributed database concepts
-- Python developers interested in system design
-- Engineers preparing to design scalable applications
-- Developers who want to understand replication behavior beyond diagrams
-- Anyone interested in database architecture and production trade-offs
+These examples intentionally keep the implementation small. Real database replication involves additional concerns:
 
-## 14. Contributions and Feedback
+- Write-ahead logs and transaction logs.
+- Durable replication acknowledgments.
+- Replication slots and log retention.
+- Network interruptions and reconnection.
+- Replica lag monitoring.
+- Connection management and routing.
+- Leader election and fencing.
+- Backup and point-in-time recovery.
 
-If you find an issue, have a better implementation approach, or want to suggest an improvement, feel free to open an issue or submit a pull request.
+**Replication is not a replacement for backups.** Replicated deletions and corrupted data can propagate to replicas as well.
 
-I'm particularly interested in feedback around:
+## Implementation Scope
 
-- Replication consistency
-- Failover strategies
-- Replica lag handling
-- Read/write routing
-- Real-world database replication trade-offs
+This repository focuses on understanding replication behavior through Python simulations.
 
-The goal is to keep the implementations simple while explaining the engineering decisions behind them.
+It does not attempt to implement a production database engine.
 
-## 15. Final Thoughts
+The examples use:
 
-Database replication looks simple at first: maintain copies of data across multiple database nodes.
+- Python dictionaries for in-memory data storage.
+- Sequential replication positions for tracking progress.
+- Python queues to simulate asynchronous replication.
+- Simple application-level routing.
+- Explicit failure scenarios to demonstrate recovery behavior.
 
-But the interesting engineering problems appear when those copies are not updated at the same time, a node becomes unavailable, or an application expects to read data immediately after writing it.
+These abstractions make the concepts easier to inspect and experiment with. They should not be interpreted as implementations of PostgreSQL WAL, MySQL binlog, consensus protocols, or production-grade failover.
 
-Understanding these edge cases is important before choosing a replication strategy for a real application.
+## Suggested Learning Path
 
-This repository explores those problems step by step using Python.
+If you are learning scalable database architecture, explore these topics in order:
+
+1. Database replication
+2. Database sharding
+3. Database indexing
+4. Database partitioning
+5. Caching strategies
+6. Distributed transactions
+7. Database consistency models
+
+Understanding the trade-offs between these approaches is more useful than treating any one of them as a universal scaling solution.
+
+## Contributing
+
+Found an issue, an incorrect assumption, or a better way to demonstrate a replication scenario?
+
+Feel free to open an issue or submit a pull request.
+
+Feedback and practical suggestions are welcome.
+
+## Author
+
+**Kuldip Awachar**
+
+GitHub: [github.com/kuldip25299](https://github.com/kuldip25299)
 
 ---
 
-**Repository:** [database-replication-python](https://github.com/<your-github-username>/database-replication-python)
-
-*No license has been selected for this repository yet.*
+If this repository helps you understand database replication, consider giving it a star and sharing your feedback.
